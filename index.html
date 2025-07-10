@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <title>Busfahrer Wasser-Edition</title>
+  <style>
+    body { font-family: sans-serif; background: #eef; text-align: center; padding: 20px; }
+    .card { display:inline-block; width:60px; height:90px; border:1px solid #000; border-radius:5px;
+           background:white; line-height:90px; margin:5px; font-size:18px; font-weight:bold; }
+    button { margin:10px; padding:10px 20px; font-size:16px; }
+    #pyramid .row { margin:5px; }
+  </style>
+</head>
+<body>
+  <h1>Busfahrer – Wasser‑Edition</h1>
+  <p id="mode-prompt">Wähle deinen Spielmodus:</p>
+  <button onclick="startMode('mini')">Mini‑Busfahrer</button>
+  <button onclick="startMode('full')">Komplett‑Busfahrer</button>
+
+  <div id="game-area" style="display:none;">
+    <div id="pyramid"></div>
+    <p id="question"></p>
+    <div id="choices"></div>
+    <p id="result"></p>
+  </div>
+
+  <script>
+  const suits=["♥","♦","♣","♠"], values=["7","8","9","10","B","D","K","A"];
+  let deck=[], mode='mini', step=0, prevCard=null;
+
+  function shuffle(){
+    deck=[];
+    suits.forEach(s=>values.forEach(v=>deck.push({suit:s, value:v})));
+    for(let i=deck.length-1;i>0;i--){
+      let j=Math.floor(Math.random()*(i+1));
+      [deck[i],deck[j]]=[deck[j],deck[i]];
+    }
+  }
+
+  function renderPyramid(){
+    const pyr=deck.slice(-10); // 4 rows = 1+2+3+4 =10
+    const cont=document.getElementById('pyramid'); cont.innerHTML='';
+    let idx=0;
+    for(let r=1;r<=4;r++){
+      let row=document.createElement('div'); row.className='row';
+      for(let c=0;c<r;c++){
+        let card=document.createElement('div'); card.className='card';
+        let obj=pyr[idx++];
+        card.textContent=obj.value+obj.suit;
+        row.appendChild(card);
+      }
+      cont.appendChild(row);
+    }
+    deck=deck.slice(0,deck.length-10);
+  }
+
+  function startMode(m){
+    mode=m; step=0; prevCard=null;
+    shuffle(); if(mode==='full') renderPyramid();
+    document.getElementById('mode-prompt').style.display='none';
+    document.getElementById('game-area').style.display='block';
+    ask();
+  }
+
+  function ask(){
+    const q=document.getElementById('question');
+    const ch=document.getElementById('choices');
+    const res = document.getElementById('result');
+    res.textContent='';
+    if(step===0){
+      q.textContent='Rot oder Schwarz?';
+      ch.innerHTML=`<button onclick="guess('color','Rot')">Rot</button>
+                     <button onclick="guess('color','Schwarz')">Schwarz</button>`;
+    } else if(step===1){
+      q.textContent='Höher oder Tiefer?';
+      ch.innerHTML=`<button onclick="guess('highlow','Höher')">Höher</button>
+                     <button onclick="guess('highlow','Tiefer')">Tiefer</button>`;
+    } else if(step===2){
+      q.textContent='Innerhalb oder Außerhalb?';
+      ch.innerHTML=`<button onclick="guess('inside','Innerhalb')">Innerhalb</button>
+                     <button onclick="guess('inside','Außerhalb')">Außerhalb</button>`;
+    } else if(mode==='full' && step<10){
+      q.textContent='Karte aus der Pyramide merken? (Klick weiter)';
+      ch.innerHTML=`<button onclick="guess('none','Weiter')">Weiter</button>`;
+    } else {
+      q.textContent='Busfahrt: Rot oder Schwarz?';
+      ch.innerHTML=`<button onclick="guess('color','Rot')">Rot</button>
+                     <button onclick="guess('color','Schwarz')">Schwarz</button>`;
+    }
+  }
+
+  function guess(type, ans){
+    const card = deck.pop();
+    const isRed = card.suit==='♥'||card.suit==='♦';
+    let correct=false;
+    if(type==='color') correct = (ans==='Rot' && isRed)||(ans==='Schwarz'&&!isRed);
+    if(type==='highlow' && prevCard){
+      const vCurr=values.indexOf(card.value), vPrev=values.indexOf(prevCard.value);
+      correct = (ans==='Höher' && vCurr>vPrev)||(ans==='Tiefer' && vCurr<vPrev);
+    }
+    if(type==='inside' && prevCard){
+      const vCurr=values.indexOf(card.value), vPrev=values.indexOf(prevCard.value);
+      const nextVal = deck[deck.length-1] && values.indexOf(deck[deck.length-1].value);
+      if(ans==='Innerhalb')
+        correct = vCurr>Math.min(vPrev, nextVal) && vCurr<Math.max(vPrev,nextVal);
+      else
+        correct = !(vCurr>Math.min(vPrev, nextVal) && vCurr<Math.max(vPrev,nextVal));
+    }
+    prevCard = card;
+    document.getElementById('result').textContent = `Gezogen: ${card.value}${card.suit}`+
+      (correct?' ✅':' ❌ – Trink einen Schluck Wasser 💧');
+    if(!correct || (mode==='mini'&&step>=2) || (mode==='full'&&step>=10)) step=0;
+    else step++;
+    if(!correct || ((mode==='mini'&&step===0)||(mode==='full'&&step===11))){
+      ask();
+    } else {
+      ask();
+    }
+  }
+  </script>
+
+</body>
+</html>
