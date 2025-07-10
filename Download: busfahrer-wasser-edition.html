@@ -1,0 +1,177 @@
+
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Busfahrer Trinkspiel (Wasser-Edition)</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            background-color: #e3f2fd;
+            text-align: center;
+            padding: 20px;
+        }
+        #game-area {
+            margin-top: 30px;
+        }
+        .card {
+            display: inline-block;
+            width: 60px;
+            height: 90px;
+            border: 1px solid #000;
+            border-radius: 5px;
+            background-color: white;
+            line-height: 90px;
+            margin: 5px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        button {
+            margin: 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+        }
+        .pyramid-row {
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Busfahrer Trinkspiel (Wasser-Edition)</h1>
+    <p>Spiel mit Verantwortung. Wer verliert, trinkt einen Schluck Wasser 💧</p>
+
+    <div id="game-area">
+        <div id="pyramid"></div>
+        <div id="question-area">
+            <p id="question-text"></p>
+            <div id="choices"></div>
+        </div>
+        <div id="result"></div>
+        <button onclick="startGame()">Spiel starten</button>
+    </div>
+
+    <script>
+        const suits = ["♥", "♦", "♣", "♠"];
+        const values = ["7", "8", "9", "10", "B", "D", "K", "A"];
+        let deck = [];
+        let pyramid = [];
+        let currentStep = 0;
+
+        function shuffleDeck() {
+            deck = [];
+            for (let suit of suits) {
+                for (let value of values) {
+                    deck.push({ suit: suit, value: value });
+                }
+            }
+            for (let i = deck.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [deck[i], deck[j]] = [deck[j], deck[i]];
+            }
+        }
+
+        function createPyramid() {
+            pyramid = [];
+            for (let i = 1; i <= 4; i++) {
+                let row = [];
+                for (let j = 0; j < i; j++) {
+                    row.push(deck.pop());
+                }
+                pyramid.push(row);
+            }
+        }
+
+        function renderPyramid() {
+            const container = document.getElementById("pyramid");
+            container.innerHTML = "";
+            for (let row of pyramid) {
+                let rowDiv = document.createElement("div");
+                rowDiv.className = "pyramid-row";
+                for (let card of row) {
+                    let cardDiv = document.createElement("div");
+                    cardDiv.className = "card";
+                    cardDiv.textContent = card.value + card.suit;
+                    rowDiv.appendChild(cardDiv);
+                }
+                container.appendChild(rowDiv);
+            }
+        }
+
+        function startGame() {
+            shuffleDeck();
+            createPyramid();
+            renderPyramid();
+            currentStep = 0;
+            nextQuestion();
+        }
+
+        function nextQuestion() {
+            const questionText = document.getElementById("question-text");
+            const choices = document.getElementById("choices");
+            const result = document.getElementById("result");
+            result.textContent = "";
+
+            if (currentStep === 0) {
+                questionText.textContent = "Karte 1: Rot oder Schwarz?";
+                choices.innerHTML = `
+                    <button onclick="checkAnswer('Rot')">Rot</button>
+                    <button onclick="checkAnswer('Schwarz')">Schwarz</button>
+                `;
+            } else if (currentStep === 1) {
+                questionText.textContent = "Karte 2: Höher oder Tiefer als vorher?";
+                choices.innerHTML = `
+                    <button onclick="checkAnswer('Höher')">Höher</button>
+                    <button onclick="checkAnswer('Tiefer')">Tiefer</button>
+                `;
+            } else if (currentStep === 2) {
+                questionText.textContent = "Karte 3: Innerhalb oder Außerhalb?";
+                choices.innerHTML = `
+                    <button onclick="checkAnswer('Innerhalb')">Innerhalb</button>
+                    <button onclick="checkAnswer('Außerhalb')">Außerhalb</button>
+                `;
+            } else if (currentStep === 3) {
+                questionText.textContent = "Karte 4: Welche Farbe (♥, ♦, ♣, ♠)?";
+                choices.innerHTML = suits.map(s => `<button onclick="checkAnswer('${s}')">${s}</button>`).join("");
+            } else {
+                questionText.textContent = "Busfahren beginnt! Tipp: Jede falsche Karte = 1 Schluck Wasser.";
+                choices.innerHTML = `<button onclick="busfahren()">Starte Busfahrt</button>`;
+            }
+        }
+
+        let drawnCards = [];
+
+        function checkAnswer(answer) {
+            const card = deck.pop();
+            drawnCards.push(card);
+            const result = document.getElementById("result");
+            result.textContent = `Gezogene Karte: ${card.value}${card.suit}`;
+
+            currentStep++;
+            nextQuestion();
+        }
+
+        function busfahren() {
+            const questionText = document.getElementById("question-text");
+            const choices = document.getElementById("choices");
+            questionText.textContent = "Busfahrer-Karten erraten: Rot oder Schwarz?";
+            choices.innerHTML = `
+                <button onclick="busCard('Rot')">Rot</button>
+                <button onclick="busCard('Schwarz')">Schwarz</button>
+            `;
+        }
+
+        function busCard(guess) {
+            const card = deck.pop();
+            const isRed = (card.suit === "♥" || card.suit === "♦");
+            const result = document.getElementById("result");
+            result.textContent = `Gezogen: ${card.value}${card.suit}`;
+
+            if ((guess === "Rot" && isRed) || (guess === "Schwarz" && !isRed)) {
+                result.textContent += " – Richtig! Weiter.";
+            } else {
+                result.textContent += " – Falsch! Trink einen Schluck Wasser 💧";
+            }
+        }
+    </script>
+</body>
+</html>
